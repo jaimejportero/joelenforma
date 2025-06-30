@@ -98,28 +98,33 @@ Genera una dieta semanal completa con estructura:
       if (!match) throw new Error("No se encontró bloque JSON");
 
       const textoLimpio = match[1].trim();
-      console.log(textoLimpio);
+      console.log('📦 JSON extraído:', textoLimpio);
 
       const jsonOriginal = JSON.parse(textoLimpio);
       const jsonAdaptado: Record<string, any[][]> = {};
-
       for (const dia in jsonOriginal) {
         const comidasPorTipo = jsonOriginal[dia];
-        const comidas = Object.keys(comidasPorTipo).map(nombreComida =>
-          comidasPorTipo[nombreComida].map((alimento: any) => ({
-            nombre: alimento.alimento || alimento.Alimento || 'Desconocido',
-            cantidad: (alimento.cantidad || alimento.Cantidad || '').replace('g', '').replace('ml', '').trim(),
-            calorias: alimento.calorias || alimento.Calorías || 0
-          }))
-        );
+
+        const comidas = Object.entries(comidasPorTipo)
+          .filter(([_, valor]) => Array.isArray(valor))
+          .map(([_, alimentos]) =>
+            (alimentos as any[]).map((alimento: any) => ({
+              nombre: alimento.alimento || alimento.Alimento || 'Desconocido',
+              cantidad: (alimento.cantidad || alimento.Cantidad || '')
+                .replace(/g|ml/i, '')
+                .trim(),
+              calorias: Number(alimento.calorias || alimento.Calorías || 0),
+            }))
+          );
+
         jsonAdaptado[dia] = comidas;
       }
-
       setDieta(jsonAdaptado);
     } catch (e) {
       console.error('❌ Error al parsear dieta:', e);
       alert('No se pudo interpretar la respuesta de la IA. Intenta ajustar el prompt o volver a generar.');
     }
+
 
   };
 
