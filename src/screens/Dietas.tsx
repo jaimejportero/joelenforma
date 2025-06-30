@@ -56,10 +56,7 @@ export default function DietaAI() {
   const minKcal = Math.max(0, Number(caloriasTotales) - margen);
   const maxKcal = Number(caloriasTotales) + margen;
 
-  const mensajesOriginales = [
-    {
-      role: 'system',
-      text: `Eres un nutricionista profesional. A partir de los productos, filtros, calorías y número de comidas, crea una dieta semanal equilibrada y detallada.
+  const prompt = `Eres un nutricionista profesional. A partir de los productos, filtros, calorías y número de comidas, crea una dieta semanal equilibrada y detallada.
 
 🔒 Reglas estrictas:
 - Usa solo datos nutricionales realistas y verificables.
@@ -67,11 +64,9 @@ export default function DietaAI() {
 - Las calorías deben ser proporcionales a la cantidad del alimento.
 - No inventes valores ni uses redondeos extremos.
 - Mantén los valores coherentes entre días y comidas.
-- Cada día debe tener entre ${minKcal} y ${maxKcal} kcal aproximadamente.`
-    },
-    {
-      role: 'user',
-      text: `Tengo estos productos: ${productosSeleccionados.join(', ')}.
+- Cada día debe tener entre ${minKcal} y ${maxKcal} kcal aproximadamente.
+
+Tengo estos productos: ${productosSeleccionados.join(', ')}.
 Filtros: ${Object.entries(filtros).filter(([_, v]) => v).map(([k]) => k).join(', ') || 'ninguno'}.
 Calorías totales diarias: entre ${minKcal} y ${maxKcal} kcal.
 Número de comidas por día: ${comidasPorDia}.
@@ -79,19 +74,19 @@ Genera una dieta semanal completa con estructura:
 {
   "Lunes": { "Desayuno": [...], "Almuerzo": [...], ... },
   "Martes": {...}
-}`
-    }
-  ];
-
-  const adaptedMessages = mensajesOriginales.map(m => ({
-    role: m.role,
-    parts: [{ text: m.text }]
-  }));
+}`;
 
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: adaptedMessages })
+    body: JSON.stringify({
+      messages: [
+        {
+          role: 'user',
+          parts: [{ text: prompt }]
+        }
+      ]
+    })
   });
 
   const data = await res.json();
