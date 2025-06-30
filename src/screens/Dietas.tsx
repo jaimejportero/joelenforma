@@ -40,6 +40,7 @@ export default function DietaAI() {
   const [caloriasTotales, setCaloriasTotales] = useState('');
   const [comidasPorDia, setComidasPorDia] = useState('3');
   const [dieta, setDieta] = useState<Record<string, any[][]>>({});
+  const [cargando, setCargando] = useState(false);
 
   const handleFiltroChange = (key: string) => {
     setFiltros((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -52,6 +53,7 @@ export default function DietaAI() {
   };
 
   const generarDieta = async () => {
+    setCargando(true); // Activamos el modal
     const margen = 100;
     const minKcal = Math.max(0, Number(caloriasTotales) - margen);
     const maxKcal = Number(caloriasTotales) + margen;
@@ -127,6 +129,8 @@ Genera una dieta semanal completa con estructura:
     } catch (e) {
       console.error('❌ Error al parsear dieta:', e);
       alert('No se pudo interpretar la respuesta de la IA. Intenta ajustar el prompt o volver a generar.');
+    } finally {
+      setCargando(false); // Siempre se desactiva al final
     }
 
 
@@ -141,115 +145,126 @@ Genera una dieta semanal completa con estructura:
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Creador de Dietas Semanales</h1>
-
-      <div className="space-y-2">
-        <label>Filtros:</label>
-        <div className="flex flex-wrap gap-4">
-          {filtrosDisponibles.map(({ key, label }) => (
-            <label key={key} className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={!!filtros[key]}
-                onChange={() => handleFiltroChange(key)}
-              />
-              {label}
-            </label>
-          ))}
+    <>
+      {cargando && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg text-center space-y-2">
+            <div className="text-xl font-semibold">⏳ Generando dieta semanal...</div>
+            <div className="text-sm text-gray-600">Esto puede tardar unos segundos</div>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div>
-        <label className="block mb-2 font-medium">Selecciona productos:</label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-          {todosLosProductos.map((prod) => (
-            <div
-              key={prod.nombre}
-              className={`text-center border rounded p-2 cursor-pointer hover:shadow ${productosSeleccionados.includes(prod.nombre) ? 'bg-green-200' : ''
-                }`}
-              onClick={() => toggleProducto(prod.nombre)}
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-bold">Creador de Dietas Semanales</h1>
+
+        <div className="space-y-2">
+          <label>Filtros:</label>
+          <div className="flex flex-wrap gap-4">
+            {filtrosDisponibles.map(({ key, label }) => (
+              <label key={key} className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={!!filtros[key]}
+                  onChange={() => handleFiltroChange(key)}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block mb-2 font-medium">Selecciona productos:</label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
+            {todosLosProductos.map((prod) => (
+              <div
+                key={prod.nombre}
+                className={`text-center border rounded p-2 cursor-pointer hover:shadow ${productosSeleccionados.includes(prod.nombre) ? 'bg-green-200' : ''
+                  }`}
+                onClick={() => toggleProducto(prod.nombre)}
+              >
+                <div className="text-3xl mb-1">{prod.emoji}</div>
+                <span>{prod.nombre}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-4 flex-wrap">
+          <div>
+            <label>Calorías diarias totales:</label>
+            <input
+              type="number"
+              className="border p-2 rounded w-32"
+              value={caloriasTotales}
+              onChange={(e) => setCaloriasTotales(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label>Comidas al día:</label>
+            <select
+              className="border p-2 rounded w-32"
+              value={comidasPorDia}
+              onChange={(e) => setComidasPorDia(e.target.value)}
             >
-              <div className="text-3xl mb-1">{prod.emoji}</div>
-              <span>{prod.nombre}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex gap-4 flex-wrap">
-        <div>
-          <label>Calorías diarias totales:</label>
-          <input
-            type="number"
-            className="border p-2 rounded w-32"
-            value={caloriasTotales}
-            onChange={(e) => setCaloriasTotales(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label>Comidas al día:</label>
-          <select
-            className="border p-2 rounded w-32"
-            value={comidasPorDia}
-            onChange={(e) => setComidasPorDia(e.target.value)}
-          >
-            {[2, 3, 4, 5].map((n) => (
-              <option key={n} value={n}>{n}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <button
-        className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded"
-        onClick={generarDieta}
-      >
-        Generar dieta semanal con IA 🧠
-      </button>
-
-      <div className="overflow-auto">
-        <table className="min-w-full table-auto border mt-6 text-sm">
-          <thead>
-            <tr>
-              <th className="border px-2 py-1">Comida</th>
-              {diasSemana.map((dia) => (
-                <th key={dia} className="border px-2 py-1">{dia}</th>
+              {[2, 3, 4, 5].map((n) => (
+                <option key={n} value={n}>{n}</option>
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[...Array(Number(comidasPorDia))].map((_, comidaIndex) => (
-              <tr key={comidaIndex}>
-                <td className="border px-2 py-1 font-semibold">Comida {comidaIndex + 1}</td>
-                {diasSemana.map((dia) => {
-                  const alimentos = dieta[dia]?.[comidaIndex] || [];
-                  const totalKcal = alimentos.reduce((acc, cur) => acc + Number(cur.calorias || 0), 0);
-                  return (
-                    <td key={dia} className="border px-2 py-1 align-top">
-                      {alimentos.map((item: any, i: number) => (
-                        <div key={i} className="mb-1">
-                          🍽️ {item.nombre} – {item.cantidad}g – {item.calorias} kcal
-                        </div>
-                      ))}
-                      <div className="text-xs font-semibold mt-1">Total: {totalKcal} kcal</div>
-                    </td>
-                  );
-                })}
+            </select>
+          </div>
+        </div>
+
+        <button
+          className="bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded"
+          onClick={generarDieta}
+        >
+          Generar dieta semanal con IA 🧠
+        </button>
+
+        <div className="overflow-auto">
+          <table className="min-w-full table-auto border mt-6 text-sm">
+            <thead>
+              <tr>
+                <th className="border px-2 py-1">Comida</th>
+                {diasSemana.map((dia) => (
+                  <th key={dia} className="border px-2 py-1">{dia}</th>
+                ))}
               </tr>
-            ))}
-            <tr>
-              <td className="border px-2 py-1 font-semibold bg-gray-100">Total día</td>
-              {diasSemana.map((dia) => (
-                <td key={dia} className="border px-2 py-1 font-bold bg-gray-100">
-                  {calcularTotalDia(dia)} kcal
-                </td>
+            </thead>
+            <tbody>
+              {[...Array(Number(comidasPorDia))].map((_, comidaIndex) => (
+                <tr key={comidaIndex}>
+                  <td className="border px-2 py-1 font-semibold">Comida {comidaIndex + 1}</td>
+                  {diasSemana.map((dia) => {
+                    const alimentos = dieta[dia]?.[comidaIndex] || [];
+                    const totalKcal = alimentos.reduce((acc, cur) => acc + Number(cur.calorias || 0), 0);
+                    return (
+                      <td key={dia} className="border px-2 py-1 align-top">
+                        {alimentos.map((item: any, i: number) => (
+                          <div key={i} className="mb-1">
+                            🍽️ {item.nombre} – {item.cantidad}g – {item.calorias} kcal
+                          </div>
+                        ))}
+                        <div className="text-xs font-semibold mt-1">Total: {totalKcal} kcal</div>
+                      </td>
+                    );
+                  })}
+                </tr>
               ))}
-            </tr>
-          </tbody>
-        </table>
+              <tr>
+                <td className="border px-2 py-1 font-semibold bg-gray-100">Total día</td>
+                {diasSemana.map((dia) => (
+                  <td key={dia} className="border px-2 py-1 font-bold bg-gray-100">
+                    {calcularTotalDia(dia)} kcal
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
