@@ -96,7 +96,7 @@ Genera una dieta semanal completa con estructura:
       .replace(/^```/, '')
       .replace(/```$/, '')
       .trim();
-
+      console.log(textoLimpio);
     const jsonOriginal = JSON.parse(textoLimpio);
     const jsonAdaptado: Record<string, any[][]> = {};
     for (const dia in jsonOriginal) {
