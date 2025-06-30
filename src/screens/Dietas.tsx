@@ -147,7 +147,7 @@ Genera una dieta semanal completa con estructura:
   return (
     <>
       {cargando && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow-lg text-center space-y-2">
             <div className="text-xl font-semibold">⏳ Generando dieta semanal...</div>
             <div className="text-sm text-gray-600">Esto puede tardar unos segundos</div>
