@@ -62,8 +62,9 @@ export default function DietaAI() {
       body: JSON.stringify({
         messages: [
           {
-            role: 'system',
-            content: `Eres un nutricionista profesional. A partir de los productos, filtros, calorías y número de comidas, crea una dieta semanal equilibrada y detallada.
+            role: 'user',
+            parts: [{
+              text: `Eres un nutricionista profesional. A partir de los productos, filtros, calorías y número de comidas, crea una dieta semanal equilibrada y detallada.
 
 🔒 Reglas estrictas:
 - Usa solo datos nutricionales realistas y verificables.
@@ -71,11 +72,9 @@ export default function DietaAI() {
 - Las calorías deben ser proporcionales a la cantidad del alimento.
 - No inventes valores ni uses redondeos extremos.
 - Mantén los valores coherentes entre días y comidas.
-- Cada día debe tener entre ${minKcal} y ${maxKcal} kcal aproximadamente.`
-          },
-          {
-            role: 'user',
-            content: `Tengo estos productos: ${productosSeleccionados.join(', ')}.
+- Cada día debe tener entre ${minKcal} y ${maxKcal} kcal aproximadamente.
+
+Tengo estos productos: ${productosSeleccionados.join(', ')}.
 Filtros: ${Object.entries(filtros).filter(([_, v]) => v).map(([k]) => k).join(', ') || 'ninguno'}.
 Calorías totales diarias: entre ${minKcal} y ${maxKcal} kcal.
 Número de comidas por día: ${comidasPorDia}.
@@ -84,9 +83,11 @@ Genera una dieta semanal completa con estructura:
   "Lunes": { "Desayuno": [...], "Almuerzo": [...], ... },
   "Martes": {...}
 }`
+            }]
           }
         ]
       })
+
     });
 
     const data = await res.json();
