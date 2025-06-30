@@ -52,18 +52,14 @@ export default function DietaAI() {
   };
 
   const generarDieta = async () => {
-    const margen = 100;
-    const minKcal = Math.max(0, Number(caloriasTotales) - margen);
-    const maxKcal = Number(caloriasTotales) + margen;
+  const margen = 100;
+  const minKcal = Math.max(0, Number(caloriasTotales) - margen);
+  const maxKcal = Number(caloriasTotales) + margen;
 
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [
-          {
-            role: 'system',
-            content: `Eres un nutricionista profesional. A partir de los productos, filtros, calorías y número de comidas, crea una dieta semanal equilibrada y detallada.
+  const mensajesOriginales = [
+    {
+      role: 'system',
+      text: `Eres un nutricionista profesional. A partir de los productos, filtros, calorías y número de comidas, crea una dieta semanal equilibrada y detallada.
 
 🔒 Reglas estrictas:
 - Usa solo datos nutricionales realistas y verificables.
@@ -72,10 +68,10 @@ export default function DietaAI() {
 - No inventes valores ni uses redondeos extremos.
 - Mantén los valores coherentes entre días y comidas.
 - Cada día debe tener entre ${minKcal} y ${maxKcal} kcal aproximadamente.`
-          },
-          {
-            role: 'user',
-            content: `Tengo estos productos: ${productosSeleccionados.join(', ')}.
+    },
+    {
+      role: 'user',
+      text: `Tengo estos productos: ${productosSeleccionados.join(', ')}.
 Filtros: ${Object.entries(filtros).filter(([_, v]) => v).map(([k]) => k).join(', ') || 'ninguno'}.
 Calorías totales diarias: entre ${minKcal} y ${maxKcal} kcal.
 Número de comidas por día: ${comidasPorDia}.
@@ -84,30 +80,40 @@ Genera una dieta semanal completa con estructura:
   "Lunes": { "Desayuno": [...], "Almuerzo": [...], ... },
   "Martes": {...}
 }`
-          }
-        ]
-      })
-    });
-
-    const data = await res.json();
-    try {
-      const textoLimpio = data.message
-        .replace(/^```json/, '')
-        .replace(/^```/, '')
-        .replace(/```$/, '')
-        .trim();
-
-      const jsonOriginal = JSON.parse(textoLimpio);
-      const jsonAdaptado: Record<string, any[][]> = {};
-      for (const dia in jsonOriginal) {
-        const comidas = jsonOriginal[dia];
-        jsonAdaptado[dia] = Object.values(comidas);
-      }
-      setDieta(jsonAdaptado);
-    } catch (e) {
-      alert('No se pudo interpretar la respuesta de la IA. Intenta ajustar el prompt o volver a generar.');
     }
-  };
+  ];
+
+  const adaptedMessages = mensajesOriginales.map(m => ({
+    role: m.role,
+    parts: [{ text: m.text }]
+  }));
+
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages: adaptedMessages })
+  });
+
+  const data = await res.json();
+  try {
+    const textoLimpio = data.message
+      .replace(/^```json/, '')
+      .replace(/^```/, '')
+      .replace(/```$/, '')
+      .trim();
+
+    const jsonOriginal = JSON.parse(textoLimpio);
+    const jsonAdaptado: Record<string, any[][]> = {};
+    for (const dia in jsonOriginal) {
+      const comidas = jsonOriginal[dia];
+      jsonAdaptado[dia] = Object.values(comidas);
+    }
+    setDieta(jsonAdaptado);
+  } catch (e) {
+    alert('No se pudo interpretar la respuesta de la IA. Intenta ajustar el prompt o volver a generar.');
+  }
+};
+
 
   const calcularTotalDia = (dia: string) => {
     const comidas = dieta[dia] || [];
