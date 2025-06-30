@@ -1,11 +1,16 @@
-const express = require("express");
+// api/chat.js
 const { GoogleGenerativeAI } = require('@google/generative-ai');
-const app = express();
-app.use(express.json());
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-app.post("/chat", async (req, res) => {
+/**
+ * Vercel function handler
+ */
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
   try {
     const { messages } = req.body;
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
@@ -16,7 +21,4 @@ app.post("/chat", async (req, res) => {
     console.error("Error:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
-});
-
-// Exporta como handler para Vercel
-module.exports = app;
+}
