@@ -113,7 +113,11 @@ Genera una dieta semanal completa con estructura:
               cantidad: (alimento.cantidad || alimento.Cantidad || '')
                 .replace(/g|ml/i, '')
                 .trim(),
-              calorias: Number(alimento.calorias || alimento.Calorías || 0),
+              calorias: Number(
+                (alimento.calorias || alimento.Calorías || '')
+                  .toString()
+                  .replace(/[^\d.]/g, '') // elimina todo excepto números y punto decimal
+              ),
             }))
           );
 
