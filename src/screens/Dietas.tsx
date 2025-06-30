@@ -91,34 +91,32 @@ Genera una dieta semanal completa con estructura:
 
     const data = await res.json();
     try {
-      const textoLimpio = data.message
-        .replace(/^```json/, '')
-        .replace(/^```/, '')
-        .replace(/```$/, '')
-        .trim();
+      const textoBruto = data.message;
 
+      const match = textoBruto.match(/```json([\s\S]*?)```/);
+      console.log(match);
+      if (!match) throw new Error("No se encontró bloque JSON");
+      const textoLimpio = match[1].trim();
       console.log(textoLimpio);
 
       const jsonOriginal = JSON.parse(textoLimpio);
       const jsonAdaptado: Record<string, any[][]> = {};
 
       for (const dia in jsonOriginal) {
-        const comidasPorTipo = jsonOriginal[dia]; // Ej: { Desayuno: [...], Almuerzo: [...], Cena: [...] }
-
-        const comidasOrdenadas = Object.keys(comidasPorTipo).map(nombreComida => {
-          return comidasPorTipo[nombreComida].map((alimento: any) => ({
-            nombre: alimento.Alimento || alimento.nombre || 'Desconocido',
-            cantidad: alimento.Cantidad?.replace('g', '').trim() || alimento.cantidad || '0',
-            calorias: alimento.Calorías || alimento.calorias || 0
-          }));
-        });
-
-        jsonAdaptado[dia] = comidasOrdenadas;
+        const comidasPorTipo = jsonOriginal[dia];
+        const comidas = Object.keys(comidasPorTipo).map(nombreComida =>
+          comidasPorTipo[nombreComida].map((alimento: any) => ({
+            nombre: alimento.alimento || alimento.Alimento || 'Desconocido',
+            cantidad: (alimento.cantidad || alimento.Cantidad || '').replace('g', '').replace('ml', '').trim(),
+            calorias: alimento.calorias || alimento.Calorías || 0
+          }))
+        );
+        jsonAdaptado[dia] = comidas;
       }
 
       setDieta(jsonAdaptado);
     } catch (e) {
-      console.error('❌ Error al parsear JSON:', e);
+      console.error('❌ Error al parsear dieta:', e);
       alert('No se pudo interpretar la respuesta de la IA. Intenta ajustar el prompt o volver a generar.');
     }
 
