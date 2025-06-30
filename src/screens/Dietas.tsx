@@ -52,11 +52,11 @@ export default function DietaAI() {
   };
 
   const generarDieta = async () => {
-  const margen = 100;
-  const minKcal = Math.max(0, Number(caloriasTotales) - margen);
-  const maxKcal = Number(caloriasTotales) + margen;
+    const margen = 100;
+    const minKcal = Math.max(0, Number(caloriasTotales) - margen);
+    const maxKcal = Number(caloriasTotales) + margen;
 
-  const prompt = `Eres un nutricionista profesional. A partir de los productos, filtros, calorías y número de comidas, crea una dieta semanal equilibrada y detallada.
+    const prompt = `Eres un nutricionista profesional. A partir de los productos, filtros, calorías y número de comidas, crea una dieta semanal equilibrada y detallada.
 
 🔒 Reglas estrictas:
 - Usa solo datos nutricionales realistas y verificables.
@@ -76,38 +76,53 @@ Genera una dieta semanal completa con estructura:
   "Martes": {...}
 }`;
 
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      messages: [
-        {
-          role: 'user',
-          parts: [{ text: prompt }]
-        }
-      ]
-    })
-  });
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [
+          {
+            role: 'user',
+            parts: [{ text: prompt }]
+          }
+        ]
+      })
+    });
 
-  const data = await res.json();
-  try {
-    const textoLimpio = data.message
-      .replace(/^```json/, '')
-      .replace(/^```/, '')
-      .replace(/```$/, '')
-      .trim();
+    const data = await res.json();
+    try {
+      const textoLimpio = data.message
+        .replace(/^```json/, '')
+        .replace(/^```/, '')
+        .replace(/```$/, '')
+        .trim();
+
       console.log(textoLimpio);
-    const jsonOriginal = JSON.parse(textoLimpio);
-    const jsonAdaptado: Record<string, any[][]> = {};
-    for (const dia in jsonOriginal) {
-      const comidas = jsonOriginal[dia];
-      jsonAdaptado[dia] = Object.values(comidas);
+
+      const jsonOriginal = JSON.parse(textoLimpio);
+      const jsonAdaptado: Record<string, any[][]> = {};
+
+      for (const dia in jsonOriginal) {
+        const comidasPorTipo = jsonOriginal[dia]; // Ej: { Desayuno: [...], Almuerzo: [...], Cena: [...] }
+
+        const comidasOrdenadas = Object.keys(comidasPorTipo).map(nombreComida => {
+          return comidasPorTipo[nombreComida].map((alimento: any) => ({
+            nombre: alimento.Alimento || alimento.nombre || 'Desconocido',
+            cantidad: alimento.Cantidad?.replace('g', '').trim() || alimento.cantidad || '0',
+            calorias: alimento.Calorías || alimento.calorias || 0
+          }));
+        });
+
+        jsonAdaptado[dia] = comidasOrdenadas;
+      }
+
+      setDieta(jsonAdaptado);
+    } catch (e) {
+      console.error('❌ Error al parsear JSON:', e);
+      alert('No se pudo interpretar la respuesta de la IA. Intenta ajustar el prompt o volver a generar.');
     }
-    setDieta(jsonAdaptado);
-  } catch (e) {
-    alert('No se pudo interpretar la respuesta de la IA. Intenta ajustar el prompt o volver a generar.');
-  }
-};
+
+  };
 
 
   const calcularTotalDia = (dia: string) => {
@@ -144,9 +159,8 @@ Genera una dieta semanal completa con estructura:
           {todosLosProductos.map((prod) => (
             <div
               key={prod.nombre}
-              className={`text-center border rounded p-2 cursor-pointer hover:shadow ${
-                productosSeleccionados.includes(prod.nombre) ? 'bg-green-200' : ''
-              }`}
+              className={`text-center border rounded p-2 cursor-pointer hover:shadow ${productosSeleccionados.includes(prod.nombre) ? 'bg-green-200' : ''
+                }`}
               onClick={() => toggleProducto(prod.nombre)}
             >
               <div className="text-3xl mb-1">{prod.emoji}</div>
@@ -218,7 +232,7 @@ Genera una dieta semanal completa con estructura:
                 })}
               </tr>
             ))}
-             <tr>
+            <tr>
               <td className="border px-2 py-1 font-semibold bg-gray-100">Total día</td>
               {diasSemana.map((dia) => (
                 <td key={dia} className="border px-2 py-1 font-bold bg-gray-100">
